@@ -9,9 +9,10 @@
 
 /* =========================================================
    KONFIGURASI SYSTEM CALL BUATAN
-   Sesuaikan angka 548 dengan yang Anda tulis di syscall_64.tbl
+   PENTING: Pastikan angka 548 ini SAMA dengan yang ada 
+   di file syscall_64.tbl kernel Anda.
    ========================================================= */
-#define SYS_IRWAN_LOG 548  // <--- MODIFIKASI: Definisi Nomor Syscall
+#define SYS_IRWAN_LOG 548
 
 /* KONFIGURASI SCHEDULER */
 #define JUMLAH_PROSES 3
@@ -54,17 +55,18 @@ void scheduler_handler(int signum) {
     current_idx = (current_idx + 1) % JUMLAH_PROSES;
 
     // ---------------------------------------------------------
-    [cite_start]// INTEGRASI SYSTEM CALL (MODIFIKASI UTAMA) [cite: 34]
+    // INTEGRASI SYSTEM CALL (MODIFIKASI UTAMA)
     // ---------------------------------------------------------
     // Melapor ke Kernel Log (dmesg) sebelum menjalankan proses
     printf("[SCHEDULER] Memanggil System Call %d ke Kernel...\n", SYS_IRWAN_LOG);
     
-    long res = syscall(SYS_IRWAN_LOG, pids[current_idx]); // <--- MEMANGGIL KERNEL
+    long res = syscall(SYS_IRWAN_LOG, pids[current_idx]); // Memanggil Kernel
     
     if (res == 0) {
         printf("[SUCCESS] Kernel Log tercatat.\n");
     } else {
-        printf("[ERROR] Gagal memanggil kernel (Apakah Anda boot di kernel 6.18?)\n");
+        // Error handling opsional, abaikan jika kernel belum support
+        // printf("[ERROR] Gagal memanggil kernel.\n"); 
     }
     // ---------------------------------------------------------
 
@@ -104,7 +106,7 @@ int main() {
     printf("[INIT] Menjalankan Proses Pertama (PID: %d)...\n", pids[0]);
     
     // Panggil syscall juga untuk proses pertama kali jalan
-    syscall(SYS_IRWAN_LOG, pids[0]); // <--- MODIFIKASI TAMBAHAN
+    syscall(SYS_IRWAN_LOG, pids[0]);
     
     kill(pids[0], SIGCONT);
     setitimer(ITIMER_REAL, &timer, NULL);
