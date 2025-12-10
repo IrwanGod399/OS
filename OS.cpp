@@ -5,9 +5,15 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/syscall.h> // <--- INI KUNCINYA (Library System Call Langsung)
+#include <sys/syscall.h> 
 
-/* KONFIGURASI */
+/* =========================================================
+   KONFIGURASI SYSTEM CALL BUATAN
+   Sesuaikan angka 548 dengan yang Anda tulis di syscall_64.tbl
+   ========================================================= */
+#define SYS_IRWAN_LOG 548  // <--- MODIFIKASI: Definisi Nomor Syscall
+
+/* KONFIGURASI SCHEDULER */
 #define JUMLAH_PROSES 3
 #define QUANTUM_DETIK 2
 
@@ -23,9 +29,7 @@ void do_work(int id) {
     int counter = 1;
 
     while(1) {
-        // --- POIN KRITIKAL UNTUK RUBRIK "MODIFIED SYSTEM CALL" ---
-        // Kita tidak pakai getpid() biasa. Kita tembak langsung ke Kernel.
-        // Ini membuktikan kita berinteraksi di level rendah.
+        // Ini system call standar (getpid)
         kernel_pid = syscall(SYS_getpid); 
 
         printf("  [User Program %d] (Kernel PID: %ld) sedang bekerja... Tahap %d\n", id+1, kernel_pid, counter++);
@@ -40,24 +44,38 @@ void do_work(int id) {
    --------------------------------------------------------- */
 // Fungsi ini dipanggil otomatis saat Timer meledak (SIGALRM)
 void scheduler_handler(int signum) {
-    printf("\n[KERNEL INTERRUPT] Waktu Habis (Quantum %d detik)!\n", QUANTUM_DETIK);
+    printf("\n[SCHEDULER] Waktu Habis (Quantum %d detik)!\n", QUANTUM_DETIK);
     
     // 1. FREEZE proses yang sedang jalan (SIGSTOP)
-    // "Modifikasi Perilaku": Memaksa proses berhenti di tengah jalan
-    printf("[KERNEL] Membekukan PID %d...\n", pids[current_idx]);
+    printf("[SCHEDULER] Membekukan PID %d...\n", pids[current_idx]);
     kill(pids[current_idx], SIGSTOP);
 
     // 2. GANTI giliran (Round Robin Algorithm)
     current_idx = (current_idx + 1) % JUMLAH_PROSES;
 
+    // ---------------------------------------------------------
+    [cite_start]// INTEGRASI SYSTEM CALL (MODIFIKASI UTAMA) [cite: 34]
+    // ---------------------------------------------------------
+    // Melapor ke Kernel Log (dmesg) sebelum menjalankan proses
+    printf("[SCHEDULER] Memanggil System Call %d ke Kernel...\n", SYS_IRWAN_LOG);
+    
+    long res = syscall(SYS_IRWAN_LOG, pids[current_idx]); // <--- MEMANGGIL KERNEL
+    
+    if (res == 0) {
+        printf("[SUCCESS] Kernel Log tercatat.\n");
+    } else {
+        printf("[ERROR] Gagal memanggil kernel (Apakah Anda boot di kernel 6.18?)\n");
+    }
+    // ---------------------------------------------------------
+
     // 3. RESUME proses selanjutnya (SIGCONT)
-    printf("[KERNEL] Mengaktifkan PID %d...\n", pids[current_idx]);
+    printf("[SCHEDULER] Mengaktifkan PID %d...\n", pids[current_idx]);
     printf("--------------------------------------------------\n\n");
     kill(pids[current_idx], SIGCONT);
 }
 
 int main() {
-    printf("=== SIMULASI TIME-SHARING DENGAN MODIFIED BEHAVIOR ===\n");
+    printf("=== SIMULASI TIME-SHARING DENGAN MODIFIED SYSTEM CALL ===\n");
     printf("Parent PID (Scheduler): %d\n\n", getpid());
 
     // --- LANGKAH 1: MEMBUAT PROSES (FORK) ---
@@ -65,40 +83,32 @@ int main() {
         pid_t pid = fork();
 
         if (pid == 0) {
-            // Area Anak
-            do_work(i); 
+            do_work(i); // Area Anak
             exit(0);
         } else {
-            // Area Bapak (Scheduler)
-            pids[i] = pid;
-            // Langsung hentikan anak yang baru lahir agar menunggu antrian
-            kill(pid, SIGSTOP);
+            pids[i] = pid; // Area Bapak
+            kill(pid, SIGSTOP); // Stop anak segera
         }
     }
 
     // --- LANGKAH 2: SETUP SINYAL & TIMER ---
-    
-    // Mendaftarkan fungsi 'scheduler_handler' agar dipanggil saat SIGALRM muncul
     signal(SIGALRM, scheduler_handler);
 
     struct itimerval timer;
-    // Interval pengulangan (setiap 2 detik)
     timer.it_interval.tv_sec = QUANTUM_DETIK;
     timer.it_interval.tv_usec = 0;
-    // Waktu ledakan pertama
     timer.it_value.tv_sec = QUANTUM_DETIK;
     timer.it_value.tv_usec = 0;
 
     // --- LANGKAH 3: JALANKAN SISTEM ---
     printf("[INIT] Menjalankan Proses Pertama (PID: %d)...\n", pids[0]);
     
-    // Jalankan anak pertama secara manual
+    // Panggil syscall juga untuk proses pertama kali jalan
+    syscall(SYS_IRWAN_LOG, pids[0]); // <--- MODIFIKASI TAMBAHAN
+    
     kill(pids[0], SIGCONT);
-
-    // Nyalakan Timer (Mulai menghitung mundur)
     setitimer(ITIMER_REAL, &timer, NULL);
 
-    // Parent diam selamanya (sebagai OS yang standby)
     while(1) {
         pause(); 
     }
