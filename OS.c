@@ -98,7 +98,7 @@ int main() {
     struct itimerval timer;
     timer.it_interval.tv_sec = QUANTUM_DETIK;
     timer.it_interval.tv_usec = 0;
-    timer.it_value.tv_sec = QUANTUM_DETIK;
+    timer.it_value.tv_sec = 1;
     timer.it_value.tv_usec = 0;
 
     // --- LANGKAH 3: JALANKAN SISTEM ---
@@ -116,6 +116,7 @@ int main() {
 
     return 0;
 }
+
 
 
 
