@@ -29,7 +29,7 @@ void do_work(int id) {
     long kernel_pid;
     int counter = 1;
 
-    for(int i = 1;i < 30;i++) {
+    for(int i = 1;i <= 30;i++) {
         // Ini system call standar (getpid)
         kernel_pid = syscall(SYS_getpid); 
 		
@@ -116,6 +116,7 @@ int main() {
 
     return 0;
 }
+
 
 
 
