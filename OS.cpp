@@ -29,14 +29,14 @@ void do_work(int id) {
     long kernel_pid;
     int counter = 1;
 
-    while(1) {
+    for(int i = 1;i < 30:i++) {
         // Ini system call standar (getpid)
         kernel_pid = syscall(SYS_getpid); 
-
-        printf("  [User Program %d] (Kernel PID: %ld) sedang bekerja... Tahap %d\n", id+1, kernel_pid, counter++);
+		
+        printf("  [User Program %d] (Kernel PID: %ld) sedang bekerja... Sekarang menghitung %d\n", id+1, kernel_pid, i++);
         
         // Simulasi kerja berat (tidur 0.5 detik)
-        usleep(500000); 
+        usleep(1000000); 
     }
 }
 
