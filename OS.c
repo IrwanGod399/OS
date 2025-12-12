@@ -33,7 +33,7 @@ void do_work(int id) {
         // Ini system call standar (getpid)
         kernel_pid = syscall(SYS_getpid); 
 		
-        printf("  [User Program %d] (Kernel PID: %ld) sedang bekerja... Sekarang menghitung %d\n", id+1, kernel_pid, i++);
+        printf("  [User Program %d] (Kernel PID: %ld) sedang bekerja... Sekarang menghitung %d\n", id+1, kernel_pid, i);
         
         // Simulasi kerja berat (tidur 0.5 detik)
         usleep(500000); 
@@ -117,4 +117,5 @@ int main() {
 
     return 0;
 }
+
 
