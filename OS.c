@@ -15,7 +15,7 @@
 #define SYS_IRWAN_LOG 548
 
 /* KONFIGURASI SCHEDULER */
-#define JUMLAH_PROSES 3
+#define JUMLAH_PROSES 5
 #define QUANTUM_DETIK 3
 
 /* Variabel Global (Untuk Scheduler) */
@@ -116,6 +116,7 @@ int main() {
 
     return 0;
 }
+
 
 
 
